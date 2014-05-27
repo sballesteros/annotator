@@ -8,8 +8,7 @@ function Annotator(ids, opts){
   this.cont = document.getElementById(this.containerId);
 
   this.oas = {}; //hash of all the annotation (key = oa.id)
-
-  /* draggable resources */
+  this.pendingOa;
 
   this.cont.addEventListener('dragenter', _handleDragEnter.bind(this), false);
   this.cont.addEventListener('dragleave', _handleDragLeave.bind(this), false);
@@ -21,12 +20,16 @@ function Annotator(ids, opts){
   Array.prototype.forEach.call($draggables, function($el){
     $el.addEventListener('dragstart', _handleDragStart.bind(this), false);
     $el.addEventListener('dragend', _handleDragEnd.bind(this), false);
+
+    $el.addEventListener('click', _handleClick.bind(this), false);
   }, this);
+
+  this.cont.addEventListener('mouseup', _handleMouseup.bind(this), false);
 
 };
 
 
-//this is Annotator
+//this === Annotator
 function _handleDragEnd(e) {
   // this/e.target is the source node.
   e.target.style.opacity = 1;
@@ -35,33 +38,33 @@ function _handleDragEnd(e) {
   });
 };
 
-//this is Annotator
+//this === Annotator
 function _handleDragEnter(e) {
   if(e.target.id !== this.containerId){
     e.target.classList.add('over');
   }
 };
 
-//this is Annotator
+//this === Annotator
 function _handleDragLeave(e) {
   e.target.classList.remove('over');
 };
 
-//this is Annotator
+//this === Annotator
 function _handleDragOver(e) {
   e.preventDefault(); // Necessary. Allows us to drop.
   e.dataTransfer.dropEffect = 'move';  // See the section on the DataTransfer object.
   return false;
 };
 
-//this is Annotator
+//this === Annotator
 function _handleDragStart(e) {
   e.target.classList.add('over');
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', e.target.id);
 };
 
-//this is Annotator
+//this === Annotator
 function _handleDragEnd(e) {
   e.target.classList.remove('over');
 
@@ -71,7 +74,7 @@ function _handleDragEnd(e) {
   }
 };
 
-//this is Annotator
+//this === Annotator
 function _handleDrop(e,linker) {
 
   e.preventDefault();
@@ -85,14 +88,39 @@ function _handleDrop(e,linker) {
 
   //create an annotation
   var oa = oaRange.getOa($el);
+  oa.body = data;
+
   if(! (oa.id in this.oas)){
-    this.oas[oa.id] = oa;
     oaRange.highlight(oa, this.cont);
     this.scrollbar.addMarker(oa.range);
   }
+  this.oas[oa.id] = oa; //if change of body
 
   return false;
 };
 
+//this === Annotator
+function _handleMouseup(e){
+
+  var oa = oaRange.getOa();
+  if(oa){
+    this.pendingOa = oa;
+  }
+
+};
+
+
+//this === Annotator
+function _handleClick(e){
+  var sel =  window.getSelection();
+
+  if(!sel.isCollapsed && this.pendingOa){
+    var data = e.target.id;
+    this.pendingOa.body = e.target.id;
+    this.oas[this.pendingOa.id] =  this.pendingOa;
+    oaRange.highlight(this.pendingOa, this.cont);
+    this.scrollbar.addMarker(this.pendingOa.range);
+  }
+};
 
 module.exports = Annotator;
