@@ -83,3 +83,7 @@
 .over{
   opacity: 0.4;
 }
+
+.oa-highlight{
+  cursor:pointer;
+}

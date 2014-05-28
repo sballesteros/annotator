@@ -26,6 +26,91 @@ function Annotator(ids, opts){
 
   this.cont.addEventListener('mouseup', _handleMouseup.bind(this), false);
 
+  //create delete button
+  this.$del = document.createElement('div');
+  this.$del.style.position = 'absolute';
+  this.$del.style.display = 'none';
+  this.$del.innerHTML =  '&times;';
+  this.cont.appendChild(this.$del);
+
+};
+
+Annotator.prototype.addOa = function(oa){
+  var that = this;
+
+  if(! (oa.id in this.oas)){
+    var $divs = oaRange.highlight(oa, this.cont);
+    this.scrollbar.addMarker(oa.range);
+    oa.markers = $divs;
+
+    //add event listeners to closest element
+    var $el = oa.range.commonAncestorContainer;
+    if($el.nodeType !== 1){
+      $el = $el.parentNode;
+    }
+
+    $el.classList.add('oa-parent');
+
+    $el.addEventListener('mouseenter', function(e){
+      e.target.style.cursor = 'pointer';
+      $divs.forEach(function($div){
+        $div.classList.add('over');
+      });
+    }, false);
+
+
+    $el.addEventListener('mouseleave', function(e){
+      e.target.style.cursor = 'auto';
+      $divs.forEach(function($div){
+        $div.classList.remove('over');
+      });
+    }, false);
+
+    $el.addEventListener('click', function(e){
+      var sel =  window.getSelection();
+      if(!sel.isCollapsed){
+        return;
+      }
+
+      //handle overlapping markers:
+      //find all range with same commonAncestor and pick up the innerMost oa target of the click
+      var potentials = [];
+      for (var key in that.oas){
+        var moa = that.oas[key];
+        var rect = _eventInHighlights(e, moa.markers);
+        if(rect){
+          potentials.push({oa:moa, rect: rect});
+        }
+      }
+
+      var theone = potentials.sort(function(a, b){return a.rect.width - b.rect.width;})[0];
+      if(theone && (theone.oa.id === oa.id)){
+
+        //TODO handle click
+        console.log('in', theone.oa.id);
+
+      } else {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+    }, false);
+  }
+
+  this.oas[oa.id] = oa;
+};
+
+
+function _eventInHighlights (e, $divs){
+
+  for(var i=0; i<$divs.length; i++){
+    var rect = $divs[i].getBoundingClientRect();
+    if( (e.clientX <= rect.right) && (e.clientX >= rect.left) && (e.clientY >= rect.top) && (e.clientY <= rect.bottom) ){
+      return rect;
+    }
+  }
+
+  return undefined;
 };
 
 
@@ -89,18 +174,15 @@ function _handleDrop(e,linker) {
   //create an annotation
   var oa = oaRange.getOa($el);
   oa.body = data;
-
-  if(! (oa.id in this.oas)){
-    oaRange.highlight(oa, this.cont);
-    this.scrollbar.addMarker(oa.range);
-  }
-  this.oas[oa.id] = oa; //if change of body
+  this.addOa(oa); //if change of body
 
   return false;
 };
 
 //this === Annotator
 function _handleMouseup(e){
+  e.preventDefault();
+  e.stopPropagation();
 
   var oa = oaRange.getOa();
   if(oa){
@@ -112,14 +194,22 @@ function _handleMouseup(e){
 
 //this === Annotator
 function _handleClick(e){
+
   var sel =  window.getSelection();
 
   if(!sel.isCollapsed && this.pendingOa){
+
     var data = e.target.id;
     this.pendingOa.body = e.target.id;
-    this.oas[this.pendingOa.id] =  this.pendingOa;
-    oaRange.highlight(this.pendingOa, this.cont);
-    this.scrollbar.addMarker(this.pendingOa.range);
+    this.addOa(this.pendingOa);
+
+
+    if (sel.removeAllRanges) {
+      sel.removeAllRanges();
+    } else if (sel.empty) {
+      sel.empty();
+    }
+
   }
 };
 
