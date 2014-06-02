@@ -12,7 +12,44 @@
           $btn.addEventListener('click', function(e){
             var obj = annotator.toJSON();
             console.log(obj);
+            console.log(JSON.stringify(obj, null,2));
           });
+
+        var oaList = [
+          {
+            "id": "e6dcb6e011fb5657b6b74e8ce351d8d3a8f12c3d",
+            "selection": {
+              "xPath": "id(\"main\")/P[1]",
+              "start": 0,
+              "startOffset": 0,
+              "endOffset": 7
+            },
+            "body": "drag1"
+          },
+          {
+            "id": "e62dedb2152f3bd7dce5bdeca8dd4c037c48b7b2",
+            "selection": {
+              "xPath": "id(\"main\")/P[3]",
+              "start": 1,
+              "end": 3,
+              "startOffset": 56,
+              "endOffset": 100
+            },
+            "body": "drag2"
+          },
+          {
+            "id": "5d6179aa271b596ddd3f71b691f701825c6ebaa6",
+            "selection": {
+              "xPath": "id(\"main\")/P[3]",
+              "start": 3,
+              "startOffset": 64,
+              "endOffset": 82
+            },
+            "body": "drag1"
+          }
+        ];
+      annotator.restore(oaList);
+
       });
 
 

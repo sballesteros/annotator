@@ -42,6 +42,7 @@ function Annotator(ids, opts){
 
   //create delete button
   this.$del = document.createElement('div');
+  this.$del.style.cursor = 'pointer';
   this.$del.style.position = 'absolute';
   this.$del.style.display = 'none';
   this.$del.style.zIndex =  10;
@@ -58,7 +59,26 @@ function Annotator(ids, opts){
 
 
 Annotator.prototype.toJSON = function(){
-  return this.oas;
+  var oas = [];
+  for (var key in this.oas){
+    var oa = this.oas[key];
+    oas.push({
+      id: oa.id,
+      selection: oa.selection,
+      body: oa.body
+    });
+  }
+  return oas;
+};
+
+Annotator.prototype.restore = function(oaList){
+  oaList.forEach(function(oa){
+    var roa = oaRange.restoreOa(oa.selection, oa.id);
+    if(oa.body){
+      roa.body = oa.body
+    }
+    this.addOa(roa);
+  }, this);
 };
 
 
@@ -81,8 +101,14 @@ Annotator.prototype.addOa = function(oa){
 
   if(! (oa.id in this.oas)){
     var $markers = oaRange.highlight(oa, this.$cont);
+
+
     oa.scrollbarMarkerId = this.scrollbar.addMarker(oa.range);
     oa.markers = $markers;
+
+    //find first rectangle
+
+    var timer; //Fire mousemove events less often (TODO calibrate)
 
     oa.listeners = {
       mousemove: function(e){
@@ -101,7 +127,13 @@ Annotator.prototype.addOa = function(oa){
             //reveal delete button
             clearTimeout(that.timerDel);
 
-            var firstRect = $first.getBoundingClientRect();
+            var $firstMarker = oa.markers.sort(function(a,b){
+              a = a.getBoundingClientRect();
+              b = b.getBoundingClientRect();
+              return ( (a.left <= b.left) || (a.top <= b.top) ) ? -1: 1;
+            })[0];
+
+            var firstRect = $firstMarker.getBoundingClientRect();
             var rootRect = that.$cont.getBoundingClientRect();
             that.$del.style.display = 'block';
             that.$del.style.top = (firstRect.top + that.$cont.scrollTop - rootRect.top) + 'px';
@@ -155,7 +187,6 @@ Annotator.prototype.addOa = function(oa){
       }
     };
 
-
     //add event listeners to closest element
     oa.$parentEl = oa.range.commonAncestorContainer;
     if(oa.$parentEl.nodeType !== 1){
@@ -163,15 +194,6 @@ Annotator.prototype.addOa = function(oa){
     }
 
     oa.$parentEl.classList.add('oa-parent');
-
-    //find first rectangle
-    var $first = oa.markers.sort(function(a,b){
-      a = a.getBoundingClientRect();
-      b = b.getBoundingClientRect();
-      return ( (a.left <= b.left) || (a.top <= b.top) ) ? -1: 1;
-    })[0];
-
-    var timer; //Fire mousemove events less often (TODO calibrate)
 
     oa.$parentEl.addEventListener('mousemove', oa.listeners.mousemove, false);
     oa.$parentEl.addEventListener('mouseleave', oa.listeners.mouseleave, false);
@@ -269,7 +291,7 @@ function _handleDrop(e,linker) {
   var $el = e.target;
 
   //create an annotation
-  var oa = oaRange.getOa($el);
+  var oa = oaRange.createOa($el);
   oa.body = data;
   this.addOa(oa); //if change of body
 
@@ -281,7 +303,7 @@ function _handleMouseup(e){
   e.preventDefault();
   e.stopPropagation();
 
-  var oa = oaRange.getOa();
+  var oa = oaRange.createOa();
   if(oa){
     this.pendingOa = oa;
   }
