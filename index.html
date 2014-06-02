@@ -8,14 +8,22 @@
 
       document.addEventListener('DOMContentLoaded', function(e){      
         var annotator = new Annotator({container: 'main'});
+        var $btn = document.getElementById('tojson');
+          $btn.addEventListener('click', function(e){
+            var obj = annotator.toJSON();
+            console.log(obj);
+          });
       });
-      
+
+
     </script>
   </head>
   <body>
 
     <div class="draggable" draggable="true" id="drag1">dragme</div>
     <div class="draggable" draggable="true" id="drag2">dragme</div>
+
+    <button id="tojson">toJSON</button>
 
     <div id="wrapper">
       <div id="main">
